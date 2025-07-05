@@ -12,34 +12,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Tidak terotentikasi.' }, { status: 401 });
     }
 
-    // Ambil ID profil siswa berdasarkan user_id yang login
+    // Ambil profil siswa, termasuk cv_url untuk validasi
     const { data: student, error: studentError } = await supabase
       .from('students')
-      .select('id')
+      .select('id, cv_url') // Ambil cv_url untuk validasi
       .eq('user_id', session.user.id)
       .single();
 
     if (studentError || !student) {
       return NextResponse.json({ error: 'Profil siswa tidak ditemukan.' }, { status: 404 });
     }
+
+    // Validasi di sisi server bahwa siswa punya CV
+    if (!student.cv_url) {
+      return NextResponse.json({ error: 'CV tidak ditemukan. Harap unggah CV terlebih dahulu.' }, { status: 400 });
+    }
     
-    const { listing_id, cover_letter } = await request.json();
+    const { listing_id } = await request.json();
     if (!listing_id) {
       return NextResponse.json({ error: 'ID lowongan wajib diisi.' }, { status: 400 });
     }
 
-    // Masukkan data lamaran baru
-    const { data, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('applications')
       .insert({
         student_id: student.id,
         listing_id: listing_id,
-        // Anda bisa menambahkan 'cover_letter' ke tabel 'applications' jika perlu
         status: 'Terkirim', // Status awal lamaran
       });
 
     if (insertError) {
-      // Cek jika error karena sudah pernah melamar (unique constraint)
       if (insertError.code === '23505') { // Kode error untuk unique violation
         return NextResponse.json({ error: 'Anda sudah pernah melamar di lowongan ini.' }, { status: 409 });
       }
