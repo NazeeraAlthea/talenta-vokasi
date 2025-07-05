@@ -3,6 +3,8 @@
 -- Tugasnya adalah membaca data dari user baru di tabel 'auth.users'
 -- dan membuat profil yang sesuai di tabel 'students' atau 'schools'.
 
+-- Cukup jalankan kode ini di Supabase SQL Editor untuk memperbarui fungsi Anda
+
 create or replace function public.create_user_profile()
 returns trigger
 language plpgsql
@@ -30,11 +32,22 @@ begin
       (new.raw_user_meta_data->>'accreditation')::public.school_accreditation,
       (new.raw_user_meta_data->>'level')::public.school_level
     );
+
+  -- ✨ DITAMBAHKAN: Blok untuk menangani registrasi perusahaan
+  elsif (new.raw_user_meta_data->>'role' = 'company_admin') then
+    -- Jika role-nya company_admin, insert ke tabel companies
+    insert into public.companies (user_id, name, industry, website)
+    values (
+      new.id,
+      new.raw_user_meta_data->>'company_name',
+      new.raw_user_meta_data->>'industry',
+      new.raw_user_meta_data->>'website'
+    );
   end if;
+  
   return new;
 end;
 $$;
-
 
 -- BAGIAN 2: TRIGGER
 -- Trigger ini "mengikat" fungsi di atas ke tabel 'auth.users'.

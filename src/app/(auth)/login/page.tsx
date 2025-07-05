@@ -18,7 +18,8 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    // DIUBAH: Tangkap 'data' untuk mendapatkan informasi user setelah login
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password,
     });
@@ -28,11 +29,26 @@ export default function LoginPage() {
     if (error) {
       setError('Email atau password salah. Silakan coba lagi.');
       console.error('Login error:', error.message);
-    } else {
-      // Redirect ke dashboard setelah login berhasil
-      // router.refresh() akan me-reload data di server components
+    } else if (data.user) {
+      // ✨ DIUBAH: Logika redirect berdasarkan role pengguna ✨
+
+      // Ambil role dari metadata pengguna
+      const role = data.user?.user_metadata?.role;
+
+      // Lakukan refresh untuk memastikan server components mendapat data sesi terbaru
       router.refresh();
-      router.push('/');
+
+      // Arahkan ke dashboard yang sesuai
+      if (role === 'student') {
+        router.push('/siswa/dashboard');
+      } else if (role === 'school_admin') {
+        router.push('/sekolah/dashboard');
+      } else if (role === 'company_admin') {
+        router.push('/perusahaan/dashboard');
+      } else {
+        // Fallback jika role tidak terdefinisi, arahkan ke halaman utama
+        router.push('/');
+      }
     }
   };
 
@@ -82,7 +98,6 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Menampilkan pesan error jika ada */}
             {error && <p className="text-center text-sm text-red-600">{error}</p>}
           </form>
 
