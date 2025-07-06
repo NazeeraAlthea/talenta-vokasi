@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       .insert({
         student_id: student.id,
         listing_id: listing_id,
-        status: 'Terkirim', // Status awal lamaran
+        status: 'APPLIED', // Status awal lamaran
       });
 
     if (insertError) {
