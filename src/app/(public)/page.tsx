@@ -79,7 +79,7 @@ export default async function HomePage() {
             Hubungkan talenta vokasi berprestasi dengan perusahaan inovatif dan sekolah unggulan.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/lowongan" className="w-full sm:w-auto rounded-md bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-lg hover:bg-indigo-500 transition-transform duration-200 hover:scale-105">
+            <Link href="/register/siswa" className="w-full sm:w-auto rounded-md bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-lg hover:bg-indigo-500 transition-transform duration-200 hover:scale-105">
               Cari Lowongan Magang
             </Link>
             <Link href="/register/perusahaan" className="w-full sm:w-auto rounded-md bg-white px-8 py-3 text-base font-semibold text-indigo-600 shadow-lg hover:bg-gray-200 transition-transform duration-200 hover:scale-105">
