@@ -1,10 +1,10 @@
 -- LANGKAH 1: Membuat bucket 'logos' dan menjadikannya publik.
 -- Opsi { "public": true } sama dengan mencentang kotak "Public bucket" di dashboard.
 -- Opsi { "allowedMimeTypes": ["image/jpeg", "image/png", "image/webp"] } adalah bonus untuk keamanan.
-SELECT storage.create_bucket(
-    'logos',
-    '{ "public": true, "allowedMimeTypes": ["image/jpeg", "image/png", "image/webp"] }'
-);
+-- SELECT storage.create_bucket(
+--     'logos',
+--     '{ "public": true, "allowedMimeTypes": ["image/jpeg", "image/png", "image/webp"] }'
+-- );
 
 
 -- LANGKAH 2: Menerapkan semua kebijakan RLS untuk bucket 'logos'
