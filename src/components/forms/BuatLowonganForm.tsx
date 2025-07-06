@@ -1,7 +1,11 @@
+// components/forms/BuatLowonganForm.tsx
+
 "use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { AlertCircle } from 'lucide-react'; // Import ikon
+import toast from 'react-hot-toast';
 
 type JobCategory = {
   id: string;
@@ -12,7 +16,6 @@ type BuatLowonganFormProps = {
   categories: JobCategory[];
 };
 
-// DIHAPUS: 'type' dari FormData
 type FormData = {
   title: string;
   description: string;
@@ -49,7 +52,6 @@ export default function BuatLowonganForm({ categories }: BuatLowonganFormProps) 
     setLoading(true);
 
     try {
-      // Data yang dikirim sudah tidak mengandung 'type'
       const response = await fetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,7 +64,7 @@ export default function BuatLowonganForm({ categories }: BuatLowonganFormProps) 
         throw new Error(result.error || 'Gagal membuat lowongan.');
       }
 
-      alert('Lowongan magang berhasil dibuat!');
+      toast.success('Lowongan magang berhasil dibuat!');
       router.push('/perusahaan/dashboard');
       router.refresh();
 
@@ -73,19 +75,20 @@ export default function BuatLowonganForm({ categories }: BuatLowonganFormProps) 
     }
   };
 
-  const inputClasses = "mt-1 block w-full rounded-md bg-slate-100 border-gray-400 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900";
+  // Standarisasi gaya input dan button
+  const inputStyle = "w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-indigo-500 focus:ring-indigo-500";
+  const buttonStyle = "inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-indigo-400";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700">Judul Posisi Magang</label>
-        {/* DIUBAH: Class untuk input lebih gelap */}
-        <input type="text" name="title" id="title" required value={formData.title} onChange={handleChange} className={inputClasses} />
+        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Judul Posisi</label>
+        <input type="text" name="title" id="title" required value={formData.title} onChange={handleChange} className={inputStyle} />
       </div>
 
       <div>
-        <label htmlFor="category_id" className="block text-sm font-medium text-gray-700">Kategori Pekerjaan</label>
-        <select name="category_id" id="category_id" required value={formData.category_id} onChange={handleChange} className={inputClasses}>
+        <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">Kategori Pekerjaan</label>
+        <select name="category_id" id="category_id" required value={formData.category_id} onChange={handleChange} className={inputStyle}>
           <option value="" disabled>-- Pilih Kategori --</option>
           {categories.map(category => (
             <option key={category.id} value={category.id}>{category.name}</option>
@@ -93,22 +96,32 @@ export default function BuatLowonganForm({ categories }: BuatLowonganFormProps) 
         </select>
       </div>
 
-      {/* DIHAPUS: Blok JSX untuk dropdown tipe lowongan */}
-
       <div>
-        <label htmlFor="location" className="block text-sm font-medium text-gray-700">Lokasi</label>
-        <input type="text" name="location" id="location" required placeholder="Cth: Jakarta Selatan (Remote)" value={formData.location} onChange={handleChange} className={inputClasses} />
+        <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Lokasi</label>
+        <input type="text" name="location" id="location" required placeholder="Cth: Jakarta Selatan (Remote)" value={formData.location} onChange={handleChange} className={inputStyle} />
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">Deskripsi Pekerjaan</label>
-        <textarea name="description" id="description" rows={6} required value={formData.description} onChange={handleChange} className={inputClasses} />
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Deskripsi Pekerjaan</label>
+        <textarea name="description" id="description" rows={6} required value={formData.description} onChange={handleChange} className={inputStyle} />
       </div>
+      
+      {/* Pesan Error dengan gaya baru */}
+      {error && (
+        <div className="rounded-md bg-red-50 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-red-800">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <div className="flex justify-end">
-        <button type="submit" disabled={loading} className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-6 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed">
+      <div className="flex justify-end pt-4">
+        <button type="submit" disabled={loading} className={buttonStyle}>
           {loading ? 'Memproses...' : 'Publikasikan Lowongan'}
         </button>
       </div>

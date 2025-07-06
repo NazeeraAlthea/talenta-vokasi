@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabaseClient';
 import { Loader2, UploadCloud, FileImage } from 'lucide-react';
 
-// Tipe data untuk props
 type School = { id: string; user_id: string; name: string; npsn: string; address: string | null; accreditation: string; level: string; logo_url: string | null; };
 type FormProps = { school: School; };
 
@@ -45,10 +44,14 @@ export default function EditSekolahForm({ school }: FormProps) {
         try {
             // 1. Jika ada file logo baru, unggah terlebih dahulu
             if (logoFile) {
-                // Buat bucket 'logos' di Supabase Storage Anda terlebih dahulu
-                const filePath = `public/${school.id}/${Date.now()}_${logoFile.name}`;
+                // --- PERUBAHAN DI SINI ---
+                // Path harus dimulai dengan user_id, bukan 'public'
+                const filePath = `${school.user_id}/${Date.now()}_${logoFile.name}`;
+                // --------------------------
+
                 const { error: uploadError } = await supabase.storage.from('logos').upload(filePath, logoFile, { upsert: true });
                 if (uploadError) throw new Error(`Gagal mengunggah logo: ${uploadError.message}`);
+                
                 const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(filePath);
                 logoUrl = publicUrl;
             }
@@ -73,11 +76,13 @@ export default function EditSekolahForm({ school }: FormProps) {
         }
     };
 
+    // ... (sisa kode JSX Anda tidak perlu diubah)
     const inputStyle = "mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600";
     const disabledInputStyle = "mt-1 block w-full rounded-md border-gray-300 bg-gray-100 px-3 py-2 text-gray-500 shadow-sm cursor-not-allowed";
 
     return (
         <div className="space-y-8">
+          {/* ... Sisa JSX Anda di sini ... */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-1"><label htmlFor="name" className="block text-sm font-medium text-gray-700">Nama Sekolah</label><input type="text" name="name" id="name" value={formData.name} onChange={handleInputChange} className={inputStyle} /></div>
                 <div className="md:col-span-1"><label htmlFor="npsn" className="block text-sm font-medium text-gray-700">NPSN</label><input type="text" name="npsn" id="npsn" value={formData.npsn} onChange={handleInputChange} className={inputStyle} /></div>

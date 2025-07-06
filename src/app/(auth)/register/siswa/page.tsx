@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '../../../../lib/supabaseClient';
 import Link from 'next/link';
@@ -27,6 +27,7 @@ type StudentFormData = {
 
 export default function SiswaRegisterPage() {
   const router = useRouter();
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   // State untuk form utama
   const [formData, setFormData] = useState<StudentFormData>({
@@ -36,20 +37,22 @@ export default function SiswaRegisterPage() {
     password: '',
   });
 
-  // --- State untuk Autocomplete Sekolah & Jurusan ---
+  // State untuk Autocomplete Sekolah & Jurusan
   const [schoolSearchTerm, setSchoolSearchTerm] = useState('');
   const [foundSchools, setFoundSchools] = useState<School[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const [majors, setMajors] = useState<Major[]>([]); // State untuk menampung daftar jurusan
-  const [selectedMajorId, setSelectedMajorId] = useState<string>(''); // State untuk jurusan yg dipilih
+  // State untuk Jurusan
+  const [majors, setMajors] = useState<Major[]>([]);
+  const [selectedMajorId, setSelectedMajorId] = useState<string>('');
 
   // State untuk UI feedback
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // --- Logika untuk Autocomplete Sekolah ---
+  // Logika untuk Autocomplete Sekolah
   const debounce = <F extends (...args: any[]) => any>(func: F, delay: number) => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     return (...args: Parameters<F>): void => {
@@ -63,6 +66,7 @@ export default function SiswaRegisterPage() {
       setFoundSchools([]);
       return;
     }
+    setIsSearching(true);
     const { data, error } = await supabase
       .from('schools')
       .select('id, name')
@@ -71,9 +75,10 @@ export default function SiswaRegisterPage() {
 
     if (error) console.error('Error fetching schools:', error);
     else setFoundSchools(data || []);
+    setIsSearching(false);
   };
 
-  const debouncedSearch = useCallback(debounce(searchSchools, 300), []);
+  const debouncedSearch = useCallback(debounce(searchSchools, 400), []);
 
   useEffect(() => {
     if (schoolSearchTerm && !selectedSchool) {
@@ -83,24 +88,26 @@ export default function SiswaRegisterPage() {
     }
   }, [schoolSearchTerm, selectedSchool, debouncedSearch]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setFoundSchools([]);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-  // --- PERUBAHAN DI SINI: Fetch Jurusan Saat Sekolah Dipilih ---
   const handleSchoolSelect = async (school: School) => {
     setSelectedSchool(school);
     setSchoolSearchTerm(school.name);
     setFoundSchools([]);
-
-    // Reset state jurusan & mulai loading
     setMajors([]);
     setSelectedMajorId('');
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from('majors')
-      .select('id, name')
-      .eq('school_id', school.id)
-      .order('name');
-
+    const { data, error } = await supabase.from('majors').select('id, name').eq('school_id', school.id).order('name');
+    
     if (error) {
       setError("Gagal memuat daftar jurusan untuk sekolah ini.");
       console.error('Error fetching majors:', error);
@@ -109,53 +116,61 @@ export default function SiswaRegisterPage() {
     }
     setLoading(false);
   };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  
+  const handleSchoolInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSchoolSearchTerm(e.target.value);
+    if (selectedSchool) {
+      setSelectedSchool(null);
+      setMajors([]);
+      setSelectedMajorId('');
+    }
   };
 
-  // --- Logika Handle Submit dengan Arsitektur Trigger ---
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    // PERBAIKAN DI SINI: Variabel 'name' diganti menjadi 'fieldName'
+    const { name: fieldName, value } = e.target;
+    setFormData(prev => ({ ...prev, [fieldName]: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
 
     if (!selectedSchool || schoolSearchTerm !== selectedSchool.name) {
-      setError('Sekolah tidak valid. Harap pilih dari daftar.');
-      return;
+        setError('Sekolah tidak valid. Harap pilih dari daftar.');
+        return;
     }
     if (!selectedMajorId) {
-      setError('Jurusan harus dipilih.');
-      return;
+        setError('Jurusan harus dipilih.');
+        return;
     }
 
     setLoading(true);
 
-    // Memanggil signUp standar, trigger di DB akan menangani pembuatan profil
     const { data, error: signUpError } = await supabase.auth.signUp({
-      email: formData.email.trim(),
-      password: formData.password,
-      options: {
-        data: {
-          role: 'student',
-          full_name: formData.fullName.trim(),
-          nisn: formData.nisn.trim(),
-          school_id: selectedSchool.id,
-          major_id: selectedMajorId,
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+            data: {
+                role: 'student',
+                full_name: formData.fullName.trim(),
+                nisn: formData.nisn.trim(),
+                school_id: selectedSchool.id,
+                major_id: selectedMajorId,
+            }
         }
-      }
     });
 
     setLoading(false);
 
     if (signUpError) {
-      setError(`Gagal mendaftar: ${signUpError.message}`);
+        setError(`Gagal mendaftar: ${signUpError.message}`);
     } else {
-      setSuccessMessage('Pendaftaran berhasil! Silakan periksa email Anda.');
-      setTimeout(() => {
-        router.push('/login');
-      }, 3000);
+        setSuccessMessage('Pendaftaran berhasil! Silakan periksa email Anda.');
+        setTimeout(() => {
+            router.push('/login');
+        }, 3000);
     }
   };
 
@@ -186,30 +201,42 @@ export default function SiswaRegisterPage() {
           {successMessage && <div className="rounded-md bg-green-50 p-4"><div className="flex"><div className="flex-shrink-0"><CheckCircle className="h-5 w-5 text-green-400" /></div><div className="ml-3"><p className="text-sm font-medium text-green-800">{successMessage}</p></div></div></div>}
           {error && <div className="rounded-md bg-red-50 p-4"><div className="flex"><div className="flex-shrink-0"><AlertCircle className="h-5 w-5 text-red-400" /></div><div className="ml-3"><p className="text-sm font-medium text-red-800">{error}</p></div></div></div>}
 
-          {/* ✨ FORM DENGAN STRUKTUR ASLI ANDA, HANYA DITAMBAHKAN className */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <input name="fullName" type="text" required placeholder="Nama Lengkap" value={formData.fullName} onChange={handleChange} className={inputStyle} />
             <input name="nisn" type="text" required placeholder="NISN" value={formData.nisn} onChange={handleChange} className={inputStyle} />
 
-            <div className="relative">
+            <div className="relative" ref={searchContainerRef}>
               <input
-                type="text" required placeholder="Ketik nama sekolah Anda..." value={schoolSearchTerm}
-                onChange={(e) => {
-                  setSchoolSearchTerm(e.target.value);
-                  setSelectedSchool(null);
-                  setMajors([]);
-                }}
+                type="text"
+                required
+                placeholder="Ketik nama sekolah Anda..."
+                value={schoolSearchTerm}
+                onChange={handleSchoolInputChange}
                 className={inputStyle}
               />
-              {foundSchools.length > 0 && (
+              {schoolSearchTerm.length >= 3 && !selectedSchool && (
                 <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                  {foundSchools.map((school) => (<li key={school.id}><button type="button" onClick={() => handleSchoolSelect(school)} className="w-full px-4 py-2 text-left text-gray-900 hover:bg-indigo-50">{school.name}</button></li>))}
+                  {isSearching ? (
+                    <li className="px-4 py-2 text-gray-500">Mencari...</li>
+                  ) : foundSchools.length > 0 ? (
+                    foundSchools.map((school) => (
+                      <li key={school.id}>
+                        <button type="button" onClick={() => handleSchoolSelect(school)} className="w-full px-4 py-2 text-left text-gray-900 hover:bg-indigo-50">
+                          {school.name}
+                        </button>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-4 py-2 text-gray-500">Sekolah tidak ditemukan.</li>
+                  )}
                 </ul>
               )}
             </div>
 
             <select
-              name="jurusan" required value={selectedMajorId}
+              name="major_id" // <-- Pastikan name sesuai dengan state yang ingin diupdate
+              required
+              value={selectedMajorId}
               onChange={(e) => setSelectedMajorId(e.target.value)}
               disabled={!selectedSchool || loading}
               className={selectStyle}
