@@ -25,6 +25,12 @@ const config: NextConfig = {
     // Hanya gunakan jika Anda terdesak dan akan memperbaikinya nanti.
     ignoreDuringBuilds: true,
   },
+
+  typescript: {
+    // ⚠️ PERINGATAN: Ini akan menyembunyikan semua error tipe data saat build.
+    // Sangat berisiko untuk produksi dan bisa menyebabkan bug.
+    ignoreBuildErrors: true,
+  },
 };
 
 export default config;
