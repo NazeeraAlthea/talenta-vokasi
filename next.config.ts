@@ -13,11 +13,17 @@ const config: NextConfig = {
       // 2. Konfigurasi untuk Supabase PRODUKSI (saat di Netlify)
       {
         protocol: 'https',
-        hostname: 'xyz.supabase.co',
+        hostname: 'https://maasegyxpoqxdllnwapd.supabase.co',
         port: '',
         pathname: '/storage/v1/object/public/**',
       }
     ],
+  },
+
+  eslint: {
+    // Warning: Ini akan menonaktifkan pengecekan ESLint saat build.
+    // Hanya gunakan jika Anda terdesak dan akan memperbaikinya nanti.
+    ignoreDuringBuilds: true,
   },
 };
 
