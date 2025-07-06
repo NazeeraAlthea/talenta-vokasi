@@ -5,7 +5,12 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
 import EditListingForm from '@/components/forms/EditListingForm';
 
-export default async function EditListingPage({ params }: { params: { listingId: string } }) {
+type PageProps = {
+  params: { listingId: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
+export default async function EditListingPage({ params, searchParams }: PageProps) {
   const supabase = createServerComponentClient({ cookies });
 
   const { data: { session } } = await supabase.auth.getSession();
