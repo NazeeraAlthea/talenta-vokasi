@@ -4,8 +4,7 @@ import { redirect } from 'next/navigation';
 import EditProfileForm from '@/components/forms/EditProfileForm'; // Komponen form baru kita
 
 export default async function EditProfilePage() {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies });
 
   // Ambil sesi pengguna
   const { data: { session } } = await supabase.auth.getSession();

@@ -20,8 +20,7 @@ type StudentProfile = {
 };
 
 export default async function SiswaProfilePage() {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies });
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {

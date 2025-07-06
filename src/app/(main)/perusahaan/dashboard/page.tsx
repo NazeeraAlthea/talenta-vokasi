@@ -23,8 +23,7 @@ type CompanyProfile = {
 };
 
 export default async function PerusahaanDashboardPage() {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies });
 
   // 1. Ambil sesi pengguna saat ini
   const { data: { session } } = await supabase.auth.getSession();

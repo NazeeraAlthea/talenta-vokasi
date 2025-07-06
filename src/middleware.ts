@@ -6,44 +6,38 @@ import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
-
-  // Buat Supabase client di dalam middleware
   const supabase = createMiddlewareClient({ req, res });
-
-  // Ambil sesi pengguna saat ini
   const { data: { session } } = await supabase.auth.getSession();
 
-  // Definisikan path publik yang boleh diakses tanpa login
-  const publicPaths = ['/login', '/register', '/'];
+  // Definisikan path yang hanya bisa diakses setelah login
+  const protectedPaths = ['/siswa', '/sekolah', '/perusahaan']; 
+  const isProtectedPath = protectedPaths.some(path => req.nextUrl.pathname.startsWith(path));
 
-  // Jika pengguna TIDAK login DAN mencoba mengakses path yang BUKAN publik
-  if (!session && !publicPaths.some(path => req.nextUrl.pathname.startsWith(path))) {
-    // Arahkan (redirect) mereka ke halaman login
+  // Jika pengguna TIDAK login DAN mencoba mengakses path yang dilindungi
+  if (!session && isProtectedPath) {
     const loginUrl = new URL('/login', req.url);
     return NextResponse.redirect(loginUrl);
   }
 
   // Jika pengguna SUDAH login DAN mencoba mengakses halaman login/register
-  if (session && publicPaths.some(path => req.nextUrl.pathname.startsWith(path))) {
-    // Arahkan mereka ke halaman utama atau dashboard yang sesuai
-    // Anda bisa menambahkan logika role di sini jika perlu
-    const homeUrl = new URL('/', req.url);
-    return NextResponse.redirect(homeUrl);
+  if (session && (req.nextUrl.pathname.startsWith('/login') || req.nextUrl.pathname.startsWith('/register'))) {
+    // Arahkan ke dashboard yang sesuai berdasarkan role
+    const role = session.user.user_metadata.role;
+    let dashboardUrl = '/'; // Halaman fallback jika role tidak ada
+    
+    if (role === 'student') dashboardUrl = '/siswa/dashboard';
+    if (role === 'school_admin') dashboardUrl = '/sekolah/dashboard';
+    if (role === 'company_admin') dashboardUrl = '/perusahaan/dashboard';
+    
+    return NextResponse.redirect(new URL(dashboardUrl, req.url));
   }
 
   return res;
 }
 
-// Konfigurasi Matcher
+// Konfigurasi Matcher (tidak berubah)
 export const config = {
   matcher: [
-    /*
-     * Cocokkan semua path permintaan kecuali untuk:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

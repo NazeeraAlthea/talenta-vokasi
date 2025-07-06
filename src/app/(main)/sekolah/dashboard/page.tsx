@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import supabase from '../../../../lib/supabaseClient';
 import { User } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Pastikan ini ada
+import { useRouter } from 'next/navigation';
+import { BookCopy, BadgeCheck, Users, Library, LogOut, UserCircle, ChevronDown } from 'lucide-react';
 
 // Tipe data untuk statistik
 type DashboardStats = {
@@ -20,24 +21,35 @@ type School = {
 };
 
 // Komponen untuk kartu navigasi
-const ActionCard = ({ href, title, description, icon }: { href: string; title: string; description: string; icon: string; }) => (
-  <Link href={href} className="block rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-    <div className="flex items-center">
-      <div className="text-3xl">{icon}</div>
-      <div className="ml-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        <p className="mt-1 text-sm text-gray-600">{description}</p>
-      </div>
-    </div>
-  </Link>
+const ActionCard = ({ href, title, description, icon: Icon }: { href: string; title: string; description: string; icon: React.ElementType; }) => (
+    <Link href={href} className="group block rounded-xl border bg-white p-6 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-indigo-300">
+        <div className="flex items-start">
+            <Icon className="h-10 w-10 text-indigo-600 transition-transform duration-300 group-hover:scale-110" />
+            <div className="ml-4">
+                <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+                <p className="mt-1 text-sm text-gray-600">{description}</p>
+            </div>
+        </div>
+    </Link>
 );
 
 // Komponen untuk kartu statistik
-const StatCard = ({ value, label }: { value: number | string; label: string; }) => (
-  <div className="rounded-lg border bg-white px-4 py-5 shadow-sm sm:p-6">
-    <dt className="truncate text-sm font-medium text-gray-500">{label}</dt>
-    <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{value}</dd>
-  </div>
+const StatCard = ({ value, label, icon: Icon }: { value: number | string; label: string; icon: React.ElementType }) => (
+    <div className="bg-white overflow-hidden shadow-lg rounded-xl border border-gray-200">
+        <div className="p-5">
+            <div className="flex items-center">
+                <div className="flex-shrink-0">
+                    <Icon className="h-8 w-8 text-indigo-500" aria-hidden="true" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                    <dl>
+                        <dt className="text-sm font-medium text-gray-500 truncate">{label}</dt>
+                        <dd className="text-3xl font-semibold text-gray-900">{value}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
 );
 
 export default function SekolahDashboardPage() {
@@ -135,64 +147,57 @@ export default function SekolahDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Sekolah</h1>
-            <p className="mt-1 text-lg text-gray-600">
-              Selamat datang kembali, <strong>{school?.name || "Admin Sekolah"}</strong>!
-            </p>
-          </div>
-          <div>
-            <button
-              onClick={handleLogout}
-              disabled={loading}
-              className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:bg-gray-400"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
+        // Latar belakang utama halaman
+        <div className="min-h-screen bg-gray-100">
+            {/* Header tidak lagi diperlukan di sini karena sudah ada di (main)/layout.tsx */}
+            
+            <main className="py-8">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {/* Judul Halaman */}
+                    <div className="mb-10">
+                        <h1 className="text-4xl font-bold tracking-tight text-gray-900">Dashboard Sekolah</h1>
+                        <p className="mt-2 text-xl text-gray-600">
+                            Selamat datang kembali, <strong>{school?.name || "Admin Sekolah"}</strong>!
+                        </p>
+                    </div>
 
-        {/* Kartu Statistik */}
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-800">Ringkasan Data</h2>
-          <dl className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard value={stats.totalMajors} label="Total Jurusan" />
-            <StatCard value={stats.totalQuota} label="Total Kuota Siswa" />
-            <StatCard value={stats.totalStudents} label="Siswa Terdaftar" />
-            <StatCard value={`${stats.verifiedStudents} / ${stats.totalStudents}`} label="Siswa Terverifikasi" />
-          </dl>
-        </div>
+                    {/* Kartu Statistik */}
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-800">Ringkasan Data</h2>
+                        <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                            <StatCard value={stats.totalMajors} label="Total Jurusan" icon={BookCopy} />
+                            <StatCard value={stats.totalStudents} label="Siswa Terdaftar" icon={Users} />
+                            <StatCard value={`${stats.verifiedStudents} / ${stats.totalStudents}`} label="Siswa Terverifikasi" icon={BadgeCheck} />
+                            <StatCard value={stats.totalQuota} label="Total Kuota Penerimaan" icon={Library} />
+                        </dl>
+                    </div>
 
-        {/* Kartu Navigasi Aksi Cepat */}
-        <div className="mt-10">
-          <h2 className="text-xl font-semibold text-gray-800">Aksi Cepat</h2>
-          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <ActionCard
-              href="/sekolah/manajemen-jurusan"
-              title="Manajemen Jurusan"
-              description="Tambah, edit, atau hapus daftar jurusan dan kuota siswa."
-              icon="🎓"
-            />
-            <ActionCard
-              href="/sekolah/verifikasi-siswa"
-              title="Verifikasi Siswa"
-              description="Lihat dan verifikasi akun siswa yang mendaftar dari sekolah Anda."
-              icon="✅"
-            />
-            <ActionCard
-              href="/sekolah/profil"
-              title="Profil Sekolah"
-              description="Perbarui informasi dan detail mengenai sekolah Anda."
-              icon="🏫"
-            />
-          </div>
+                    {/* Kartu Navigasi Aksi Cepat */}
+                    <div className="mt-12">
+                        <h2 className="text-xl font-semibold text-gray-800">Aksi Cepat</h2>
+                        <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            <ActionCard
+                                href="/sekolah/manajemen-jurusan"
+                                title="Manajemen Jurusan"
+                                description="Tambah, edit, atau hapus daftar jurusan dan kuota siswa."
+                                icon={BookCopy}
+                            />
+                            <ActionCard
+                                href="/sekolah/verifikasi-siswa"
+                                title="Verifikasi Siswa"
+                                description="Lihat dan verifikasi akun siswa yang mendaftar dari sekolah Anda."
+                                icon={BadgeCheck}
+                            />
+                            <ActionCard
+                                href="/sekolah/profil"
+                                title="Profil Sekolah"
+                                description="Perbarui informasi dan detail mengenai sekolah Anda."
+                                icon={Library}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </main>
         </div>
-
-      </div>
-    </div>
-  );
+    );
 }

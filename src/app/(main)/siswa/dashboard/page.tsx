@@ -47,8 +47,7 @@ const ListingCard = ({ listing }: { listing: Listing }) => (
 
 // Fungsi utama halaman sekarang menjadi 'async'
 export default async function SiswaDashboardPage() {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies });
 
   // 1. Ambil sesi pengguna di server
   const { data: { session } } = await supabase.auth.getSession();

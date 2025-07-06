@@ -10,8 +10,7 @@ type JobCategory = {
 };
 
 export default async function BuatLowonganPage() {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const supabase = createServerComponentClient({ cookies });
 
   // Periksa sesi pengguna
   const { data: { session } } = await supabase.auth.getSession();

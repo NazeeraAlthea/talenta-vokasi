@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '../../../../lib/supabaseClient';
+import Link from 'next/link';
+import Image from 'next/image';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 // Tipe data yang dibutuhkan
 type School = {
@@ -37,7 +40,7 @@ export default function SiswaRegisterPage() {
   const [schoolSearchTerm, setSchoolSearchTerm] = useState('');
   const [foundSchools, setFoundSchools] = useState<School[]>([]);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
-  
+
   const [majors, setMajors] = useState<Major[]>([]); // State untuk menampung daftar jurusan
   const [selectedMajorId, setSelectedMajorId] = useState<string>(''); // State untuk jurusan yg dipilih
 
@@ -69,7 +72,7 @@ export default function SiswaRegisterPage() {
     if (error) console.error('Error fetching schools:', error);
     else setFoundSchools(data || []);
   };
-  
+
   const debouncedSearch = useCallback(debounce(searchSchools, 300), []);
 
   useEffect(() => {
@@ -86,7 +89,7 @@ export default function SiswaRegisterPage() {
     setSelectedSchool(school);
     setSchoolSearchTerm(school.name);
     setFoundSchools([]);
-    
+
     // Reset state jurusan & mulai loading
     setMajors([]);
     setSelectedMajorId('');
@@ -156,79 +159,73 @@ export default function SiswaRegisterPage() {
     }
   };
 
+  const inputStyle = "w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-indigo-500 focus:ring-indigo-500";
+  const selectStyle = "w-full rounded-md border-gray-300 p-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100";
+
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden w-1/2 items-center justify-center bg-blue-600 p-12 lg:flex">
-        <div className="text-white text-center">
-          <h1 className="text-4xl font-bold">Selamat Datang, Talenta Muda!</h1>
-          <p className="mt-4 text-lg">Langkah pertama Anda menuju karir impian dimulai di sini.</p>
+    <div className="flex min-h-screen bg-white">
+      <div className="hidden w-1/2 items-center justify-center bg-indigo-700 p-12 lg:flex relative overflow-hidden">
+        <div className="absolute bg-indigo-600 rounded-full w-96 h-96 -top-20 -left-20"></div>
+        <div className="absolute bg-indigo-600 rounded-full w-64 h-64 -bottom-16 -right-10"></div>
+        <div className="text-white text-center z-10">
+          <Link href="/">
+            <Image src="/images/logo.png" alt="Logo Talenta Vokasi" width={200} height={120} className="mx-auto mb-8 rounded-full" />
+          </Link>
+          <h1 className="text-4xl font-bold tracking-tight">Selamat Datang, Talenta Muda!</h1>
+          <p className="mt-4 text-lg max-w-md mx-auto text-indigo-200">Langkah pertama Anda menuju karir impian dimulai di sini.</p>
         </div>
       </div>
-      <div className="flex w-full items-center justify-center bg-gray-50 p-6 lg:w-1/2">
-        <div className="w-full max-w-md">
-          <h2 className="mb-8 text-center text-3xl font-bold text-gray-900">
-            Registrasi Akun Siswa
-          </h2>
+
+      <div className="flex w-full items-center justify-center bg-gray-50 p-6 lg:w-1/2 overflow-y-auto">
+        <div className="w-full max-w-lg space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Registrasi Akun Siswa</h2>
+            <p className="mt-2 text-sm text-gray-600">Sudah punya akun? <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">Masuk di sini</Link></p>
+          </div>
+
+          {successMessage && <div className="rounded-md bg-green-50 p-4"><div className="flex"><div className="flex-shrink-0"><CheckCircle className="h-5 w-5 text-green-400" /></div><div className="ml-3"><p className="text-sm font-medium text-green-800">{successMessage}</p></div></div></div>}
+          {error && <div className="rounded-md bg-red-50 p-4"><div className="flex"><div className="flex-shrink-0"><AlertCircle className="h-5 w-5 text-red-400" /></div><div className="ml-3"><p className="text-sm font-medium text-red-800">{error}</p></div></div></div>}
+
+          {/* ✨ FORM DENGAN STRUKTUR ASLI ANDA, HANYA DITAMBAHKAN className */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input name="fullName" type="text" required placeholder="Nama Lengkap" value={formData.fullName} onChange={handleChange} className="w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-            <input name="nisn" type="text" required placeholder="NISN" value={formData.nisn} onChange={handleChange} className="w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-            
-            {/* Input Autocomplete Sekolah */}
+            <input name="fullName" type="text" required placeholder="Nama Lengkap" value={formData.fullName} onChange={handleChange} className={inputStyle} />
+            <input name="nisn" type="text" required placeholder="NISN" value={formData.nisn} onChange={handleChange} className={inputStyle} />
+
             <div className="relative">
-              <input 
-                type="text" 
-                required 
-                placeholder="Ketik nama sekolah Anda..." 
-                value={schoolSearchTerm}
+              <input
+                type="text" required placeholder="Ketik nama sekolah Anda..." value={schoolSearchTerm}
                 onChange={(e) => {
                   setSchoolSearchTerm(e.target.value);
                   setSelectedSchool(null);
-                  setMajors([]); // Kosongkan jurusan jika sekolah diubah
+                  setMajors([]);
                 }}
-                className="w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className={inputStyle}
               />
               {foundSchools.length > 0 && (
                 <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                  {foundSchools.map((school) => (
-                    <li key={school.id}>
-                      <button type="button" onClick={() => handleSchoolSelect(school)} className="w-full px-4 py-2 text-left text-gray-900 hover:bg-blue-50">
-                        {school.name}
-                      </button>
-                    </li>
-                  ))}
+                  {foundSchools.map((school) => (<li key={school.id}><button type="button" onClick={() => handleSchoolSelect(school)} className="w-full px-4 py-2 text-left text-gray-900 hover:bg-indigo-50">{school.name}</button></li>))}
                 </ul>
               )}
             </div>
-            
-            {/* --- PERUBAHAN DI SINI: Dropdown Jurusan Dinamis --- */}
+
             <select
-              name="jurusan"
-              required
-              value={selectedMajorId}
+              name="jurusan" required value={selectedMajorId}
               onChange={(e) => setSelectedMajorId(e.target.value)}
-              disabled={!selectedSchool || loading} // Non-aktif jika sekolah belum dipilih
-              className="w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+              disabled={!selectedSchool || loading}
+              className={selectStyle}
             >
-              <option value="" disabled>
-                {selectedSchool ? 'Pilih Jurusan Anda' : 'Pilih Sekolah Terlebih Dahulu'}
-              </option>
-              {majors.map((major) => (
-                <option key={major.id} value={major.id}>
-                  {major.name}
-                </option>
-              ))}
+              <option value="" disabled>{loading ? 'Memuat...' : (selectedSchool ? 'Pilih Jurusan Anda' : 'Pilih Sekolah Terlebih Dahulu')}</option>
+              {majors.map((major) => (<option key={major.id} value={major.id}>{major.name}</option>))}
             </select>
-            
-            <input name="email" type="email" required placeholder="Email" value={formData.email} onChange={handleChange} className="w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-            <input name="password" type="password" required placeholder="Password (min. 6 karakter)" value={formData.password} onChange={handleChange} className="w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-            
+
+            <input name="email" type="email" required placeholder="Email" value={formData.email} onChange={handleChange} className={inputStyle} />
+            <input name="password" type="password" required placeholder="Password (min. 6 karakter)" value={formData.password} onChange={handleChange} className={inputStyle} />
+
             <div>
-              <button type="submit" disabled={loading || !!successMessage} className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400">
+              <button type="submit" disabled={loading || !!successMessage} className="flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-indigo-400">
                 {loading ? 'Mendaftarkan...' : 'Daftar'}
               </button>
             </div>
-            {error && <p className="text-center text-sm text-red-600">{error}</p>}
-            {successMessage && <p className="text-center text-sm text-green-600">{successMessage}</p>}
           </form>
         </div>
       </div>
