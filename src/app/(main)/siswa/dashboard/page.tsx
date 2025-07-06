@@ -5,10 +5,10 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Inbox, Check } from 'lucide-react'; // <-- Import ikon Check
+import { Inbox, Check, Lock } from 'lucide-react'; // Import ikon Lock
 import CategoryFilter from '@/components/ui/CategoryFilter';
 
-// Tipe data & Komponen ListingCard tidak berubah...
+// Tipe data untuk lowongan
 type Listing = {
     id: string;
     title: string;
@@ -16,10 +16,11 @@ type Listing = {
     companies: { name: string; logo_url: string | null; } | null;
 };
 
-// --- PERUBAHAN DI SINI: ListingCard sekarang menerima prop isApplied ---
-const ListingCard = ({ listing, isApplied }: { listing: Listing, isApplied: boolean }) => {
+// Komponen Kartu Lowongan dengan logika tombol yang diperbarui
+const ListingCard = ({ listing, isApplied, isVerified }: { listing: Listing, isApplied: boolean, isVerified: boolean }) => {
     const companyName = listing.companies?.name || 'Perusahaan';
     const initial = companyName.charAt(0).toUpperCase() || '?';
+    
     return (
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
             <div className="flex-grow">
@@ -35,16 +36,21 @@ const ListingCard = ({ listing, isApplied }: { listing: Listing, isApplied: bool
                 </div>
             </div>
             <div className="mt-5 flex items-center justify-end">
-                {/* --- PERUBAHAN DI SINI: Tampilkan tombol berdasarkan isApplied --- */}
+                {/* Logika Kondisional untuk Tombol Lamar */}
                 {isApplied ? (
                     <span className="inline-flex items-center gap-2 rounded-md bg-green-100 px-4 py-2 text-sm font-medium text-green-800">
                         <Check size={16} />
                         Sudah Dilamar
                     </span>
-                ) : (
+                ) : isVerified ? (
                     <Link href={`/lowongan/${listing.id}/lamar`} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                         Lamar Sekarang
                     </Link>
+                ) : (
+                    <button disabled title="Akun Anda harus diverifikasi oleh sekolah untuk dapat melamar" className="inline-flex items-center gap-2 rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-white cursor-not-allowed">
+                        <Lock size={16} />
+                        Lamar Sekarang
+                    </button>
                 )}
             </div>
         </div>
@@ -64,8 +70,15 @@ export default async function SiswaDashboardPage({
     redirect('/login');
   }
 
-  // --- PERUBAHAN DI SINI: Ambil juga data lamaran siswa ---
-  const { data: student } = await supabase.from('students').select('id').eq('user_id', session.user.id).single();
+  // Ambil profil siswa LENGKAP dengan status verifikasinya
+  const { data: student } = await supabase
+    .from('students')
+    .select('id, verification_status') // Ambil status verifikasi
+    .eq('user_id', session.user.id)
+    .single();
+  
+  // Tentukan apakah siswa sudah terverifikasi
+  const isStudentVerified = student?.verification_status === 'VERIFIED_BY_SCHOOL';
   
   // Ambil semua ID lowongan yang sudah dilamar oleh siswa ini
   const { data: appliedApplications } = await supabase
@@ -75,7 +88,6 @@ export default async function SiswaDashboardPage({
 
   // Buat Set untuk pengecekan yang efisien
   const appliedListingIds = new Set(appliedApplications?.map(app => app.listing_id) || []);
-
 
   const { data: categories } = await supabase.from('job_categories').select('id, name').order('name');
   const selectedCategory = searchParams?.category;
@@ -114,13 +126,14 @@ export default async function SiswaDashboardPage({
           {listings && listings.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {listings.map(listing => {
-                // --- PERUBAHAN DI SINI: Cek apakah lowongan sudah dilamar ---
+                // Cek apakah lowongan ini sudah dilamar
                 const isApplied = appliedListingIds.has(listing.id);
                 return (
                   <ListingCard 
                     key={listing.id} 
                     listing={{...listing, companies: Array.isArray(listing.companies) ? listing.companies[0] : listing.companies}} 
-                    isApplied={isApplied} 
+                    isApplied={isApplied}
+                    isVerified={isStudentVerified} // Teruskan status verifikasi sebagai prop
                   />
                 );
               })}
