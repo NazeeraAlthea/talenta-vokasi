@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '../../../lib/supabaseClient';
 import Link from 'next/link';
+import Image from 'next/image';
+import { AlertCircle } from 'lucide-react'; // Import ikon untuk pesan error
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,7 +20,6 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    // DIUBAH: Tangkap 'data' untuk mendapatkan informasi user setelah login
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password,
@@ -30,15 +31,9 @@ export default function LoginPage() {
       setError('Email atau password salah. Silakan coba lagi.');
       console.error('Login error:', error.message);
     } else if (data.user) {
-      // ✨ DIUBAH: Logika redirect berdasarkan role pengguna ✨
-
-      // Ambil role dari metadata pengguna
       const role = data.user?.user_metadata?.role;
-
-      // Lakukan refresh untuk memastikan server components mendapat data sesi terbaru
       router.refresh();
 
-      // Arahkan ke dashboard yang sesuai
       if (role === 'student') {
         router.push('/siswa/dashboard');
       } else if (role === 'school_admin') {
@@ -46,29 +41,59 @@ export default function LoginPage() {
       } else if (role === 'company_admin') {
         router.push('/perusahaan/dashboard');
       } else {
-        // Fallback jika role tidak terdefinisi, arahkan ke halaman utama
         router.push('/');
       }
     }
   };
 
+  // Mengadopsi gaya dari halaman registrasi
+  const inputStyle = "w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-indigo-500 focus:ring-indigo-500";
+  const buttonStyle = "flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-indigo-400";
+
+
   return (
-    <div className="flex min-h-screen">
-      {/* Kolom Kiri untuk Branding */}
-      <div className="hidden w-1/2 items-center justify-center bg-blue-600 p-12 lg:flex">
-        <div className="text-center text-white">
-          <h1 className="text-4xl font-bold">Talenta Vokasi</h1>
-          <p className="mt-4 text-lg">Hubungkan Potensi Anda dengan Peluang Terbaik.</p>
+    <div className="flex min-h-screen bg-white">
+      {/* Kolom Kiri untuk Branding (disamakan dengan halaman register) */}
+      <div className="hidden w-1/2 items-center justify-center bg-indigo-700 p-12 lg:flex relative overflow-hidden">
+        <div className="absolute bg-indigo-600 rounded-full w-96 h-96 -top-20 -left-20"></div>
+        <div className="absolute bg-indigo-600 rounded-full w-64 h-64 -bottom-16 -right-10"></div>
+        <div className="text-white text-center z-10">
+          <Link href="/">
+            <Image src="/images/logo.png" alt="Logo Talenta Vokasi" width={200} height={120} className="mx-auto mb-8 rounded-full" />
+          </Link>
+          <h1 className="text-4xl font-bold tracking-tight">Selamat Datang Kembali!</h1>
+          <p className="mt-4 text-lg max-w-md mx-auto text-indigo-200">Hubungkan potensi Anda dengan peluang terbaik.</p>
         </div>
       </div>
 
-      {/* Kolom Kanan untuk Form Login */}
-      <div className="flex w-full items-center justify-center bg-gray-50 p-6 lg:w-1/2">
-        <div className="w-full max-w-md">
-          <h2 className="mb-8 text-center text-3xl font-bold text-gray-900">
-            Selamat Datang Kembali
-          </h2>
-          <form onSubmit={handleLogin} className="space-y-5">
+      {/* Kolom Kanan untuk Form Login (disamakan dengan halaman register) */}
+      <div className="flex w-full items-center justify-center bg-gray-50 p-6 lg:w-1/2 overflow-y-auto">
+        <div className="w-full max-w-lg space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Masuk ke Akun Anda</h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Belum punya akun?{' '}
+              <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+                Daftar di sini
+              </Link>
+            </p>
+          </div>
+
+          {/* Pesan Error dengan gaya baru */}
+          {error && (
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <AlertCircle className="h-5 w-5 text-red-400" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-red-800">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
             <input
               name="email"
               type="email"
@@ -76,7 +101,7 @@ export default function LoginPage() {
               placeholder="Alamat Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className={inputStyle}
             />
             <input
               name="password"
@@ -85,28 +110,19 @@ export default function LoginPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border-gray-300 p-3 text-gray-900 placeholder-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className={inputStyle}
             />
 
             <div>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400"
+                className={buttonStyle}
               >
                 {loading ? 'Memproses...' : 'Masuk'}
               </button>
             </div>
-
-            {error && <p className="text-center text-sm text-red-600">{error}</p>}
           </form>
-
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Belum punya akun?{' '}
-            <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              Daftar di sini
-            </Link>
-          </p>
         </div>
       </div>
     </div>
