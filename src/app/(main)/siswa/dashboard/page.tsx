@@ -5,8 +5,8 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Inbox } from 'lucide-react';
-import CategoryFilter from '@/components/ui/CategoryFilter'; // <-- 1. Import komponen filter
+import { Inbox, Check } from 'lucide-react'; // <-- Import ikon Check
+import CategoryFilter from '@/components/ui/CategoryFilter';
 
 // Tipe data & Komponen ListingCard tidak berubah...
 type Listing = {
@@ -15,7 +15,9 @@ type Listing = {
     location: string;
     companies: { name: string; logo_url: string | null; } | null;
 };
-const ListingCard = ({ listing }: { listing: Listing }) => {
+
+// --- PERUBAHAN DI SINI: ListingCard sekarang menerima prop isApplied ---
+const ListingCard = ({ listing, isApplied }: { listing: Listing, isApplied: boolean }) => {
     const companyName = listing.companies?.name || 'Perusahaan';
     const initial = companyName.charAt(0).toUpperCase() || '?';
     return (
@@ -33,14 +35,23 @@ const ListingCard = ({ listing }: { listing: Listing }) => {
                 </div>
             </div>
             <div className="mt-5 flex items-center justify-end">
-                <Link href={`/lowongan/${listing.id}/lamar`} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Lamar Sekarang</Link>
+                {/* --- PERUBAHAN DI SINI: Tampilkan tombol berdasarkan isApplied --- */}
+                {isApplied ? (
+                    <span className="inline-flex items-center gap-2 rounded-md bg-green-100 px-4 py-2 text-sm font-medium text-green-800">
+                        <Check size={16} />
+                        Sudah Dilamar
+                    </span>
+                ) : (
+                    <Link href={`/lowongan/${listing.id}/lamar`} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Lamar Sekarang
+                    </Link>
+                )}
             </div>
         </div>
     );
 };
 
 
-// 2. Ubah signature fungsi untuk menerima searchParams
 export default async function SiswaDashboardPage({
   searchParams,
 }: {
@@ -53,23 +64,32 @@ export default async function SiswaDashboardPage({
     redirect('/login');
   }
 
-  // 3. Ambil daftar kategori pekerjaan & kategori yang dipilih dari URL
+  // --- PERUBAHAN DI SINI: Ambil juga data lamaran siswa ---
+  const { data: student } = await supabase.from('students').select('id').eq('user_id', session.user.id).single();
+  
+  // Ambil semua ID lowongan yang sudah dilamar oleh siswa ini
+  const { data: appliedApplications } = await supabase
+    .from('applications')
+    .select('listing_id')
+    .eq('student_id', student?.id || '');
+
+  // Buat Set untuk pengecekan yang efisien
+  const appliedListingIds = new Set(appliedApplications?.map(app => app.listing_id) || []);
+
+
   const { data: categories } = await supabase.from('job_categories').select('id, name').order('name');
   const selectedCategory = searchParams?.category;
 
-  // 4. Bangun query Supabase secara dinamis
   let query = supabase
     .from('listings')
     .select(`id, title, location, companies!inner(name, logo_url)`)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
-  // Jika ada kategori yang dipilih (dan bukan 'all'), tambahkan filter
   if (selectedCategory && selectedCategory !== 'all') {
     query = query.eq('category_id', selectedCategory);
   }
 
-  // Eksekusi query
   const { data: listings, error } = await query;
 
   if (error) {
@@ -86,7 +106,6 @@ export default async function SiswaDashboardPage({
             <p className="mt-2 text-lg text-gray-600">Temukan peluang terbaik untuk memulai karirmu.</p>
           </div>
           <div className="mt-4 md:mt-0 flex-shrink-0">
-            {/* 5. Ganti input dengan komponen filter kategori */}
             <CategoryFilter categories={categories || []} />
           </div>
         </div>
@@ -94,9 +113,17 @@ export default async function SiswaDashboardPage({
         <div className="mt-8">
           {listings && listings.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {listings.map(listing => (
-                <ListingCard key={listing.id} listing={{...listing, companies: Array.isArray(listing.companies) ? listing.companies[0] : listing.companies}} />
-              ))}
+              {listings.map(listing => {
+                // --- PERUBAHAN DI SINI: Cek apakah lowongan sudah dilamar ---
+                const isApplied = appliedListingIds.has(listing.id);
+                return (
+                  <ListingCard 
+                    key={listing.id} 
+                    listing={{...listing, companies: Array.isArray(listing.companies) ? listing.companies[0] : listing.companies}} 
+                    isApplied={isApplied} 
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="text-center rounded-lg border-2 border-dashed border-gray-300 p-12 mt-12 bg-white">
