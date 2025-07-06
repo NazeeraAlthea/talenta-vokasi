@@ -5,22 +5,19 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Inbox, Check, Lock } from 'lucide-react'; // Import ikon Lock
+import { Inbox, Check, Lock, AlertTriangle } from 'lucide-react'; // <-- 1. Import ikon AlertTriangle
 import CategoryFilter from '@/components/ui/CategoryFilter';
 
-// Tipe data untuk lowongan
+// Tipe data & Komponen ListingCard tidak berubah...
 type Listing = {
     id: string;
     title: string;
     location: string;
     companies: { name: string; logo_url: string | null; } | null;
 };
-
-// Komponen Kartu Lowongan dengan logika tombol yang diperbarui
 const ListingCard = ({ listing, isApplied, isVerified }: { listing: Listing, isApplied: boolean, isVerified: boolean }) => {
     const companyName = listing.companies?.name || 'Perusahaan';
     const initial = companyName.charAt(0).toUpperCase() || '?';
-    
     return (
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
             <div className="flex-grow">
@@ -36,21 +33,12 @@ const ListingCard = ({ listing, isApplied, isVerified }: { listing: Listing, isA
                 </div>
             </div>
             <div className="mt-5 flex items-center justify-end">
-                {/* Logika Kondisional untuk Tombol Lamar */}
                 {isApplied ? (
-                    <span className="inline-flex items-center gap-2 rounded-md bg-green-100 px-4 py-2 text-sm font-medium text-green-800">
-                        <Check size={16} />
-                        Sudah Dilamar
-                    </span>
+                    <span className="inline-flex items-center gap-2 rounded-md bg-green-100 px-4 py-2 text-sm font-medium text-green-800"><Check size={16} />Sudah Dilamar</span>
                 ) : isVerified ? (
-                    <Link href={`/lowongan/${listing.id}/lamar`} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                        Lamar Sekarang
-                    </Link>
+                    <Link href={`/lowongan/${listing.id}/lamar`} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Lamar Sekarang</Link>
                 ) : (
-                    <button disabled title="Akun Anda harus diverifikasi oleh sekolah untuk dapat melamar" className="inline-flex items-center gap-2 rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-white cursor-not-allowed">
-                        <Lock size={16} />
-                        Lamar Sekarang
-                    </button>
+                    <button disabled title="Akun Anda harus diverifikasi oleh sekolah untuk dapat melamar" className="inline-flex items-center gap-2 rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-white cursor-not-allowed"><Lock size={16} />Lamar Sekarang</button>
                 )}
             </div>
         </div>
@@ -66,37 +54,20 @@ export default async function SiswaDashboardPage({
   const supabase = createServerComponentClient({ cookies });
 
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    redirect('/login');
-  }
+  if (!session) redirect('/login');
 
-  // Ambil profil siswa LENGKAP dengan status verifikasinya
-  const { data: student } = await supabase
-    .from('students')
-    .select('id, verification_status') // Ambil status verifikasi
-    .eq('user_id', session.user.id)
-    .single();
+  const { data: student } = await supabase.from('students').select('id, verification_status').eq('user_id', session.user.id).single();
   
-  // Tentukan apakah siswa sudah terverifikasi
   const isStudentVerified = student?.verification_status === 'VERIFIED_BY_SCHOOL';
+  const isVerificationPending = student?.verification_status === 'PENDING';
   
-  // Ambil semua ID lowongan yang sudah dilamar oleh siswa ini
-  const { data: appliedApplications } = await supabase
-    .from('applications')
-    .select('listing_id')
-    .eq('student_id', student?.id || '');
-
-  // Buat Set untuk pengecekan yang efisien
+  const { data: appliedApplications } = await supabase.from('applications').select('listing_id').eq('student_id', student?.id || '');
   const appliedListingIds = new Set(appliedApplications?.map(app => app.listing_id) || []);
 
   const { data: categories } = await supabase.from('job_categories').select('id, name').order('name');
   const selectedCategory = searchParams?.category;
 
-  let query = supabase
-    .from('listings')
-    .select(`id, title, location, companies!inner(name, logo_url)`)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
+  let query = supabase.from('listings').select(`id, title, location, companies!inner(name, logo_url)`).eq('is_active', true).order('created_at', { ascending: false });
 
   if (selectedCategory && selectedCategory !== 'all') {
     query = query.eq('category_id', selectedCategory);
@@ -122,18 +93,36 @@ export default async function SiswaDashboardPage({
           </div>
         </div>
 
+        {/* --- 2. TAMBAHKAN BLOK PERINGATAN DI SINI --- */}
+        {isVerificationPending && (
+          <div className="mt-6 rounded-md bg-yellow-50 p-4 border border-yellow-300">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <AlertTriangle className="h-5 w-5 text-yellow-400" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-yellow-800">Akun Menunggu Verifikasi</h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>
+                    Akun Anda sedang menunggu persetujuan dari pihak sekolah. Anda baru bisa melamar lowongan setelah akun terverifikasi.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-8">
           {listings && listings.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {listings.map(listing => {
-                // Cek apakah lowongan ini sudah dilamar
                 const isApplied = appliedListingIds.has(listing.id);
                 return (
                   <ListingCard 
                     key={listing.id} 
                     listing={{...listing, companies: Array.isArray(listing.companies) ? listing.companies[0] : listing.companies}} 
                     isApplied={isApplied}
-                    isVerified={isStudentVerified} // Teruskan status verifikasi sebagai prop
+                    isVerified={isStudentVerified}
                   />
                 );
               })}

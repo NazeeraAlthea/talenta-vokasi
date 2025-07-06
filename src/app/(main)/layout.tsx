@@ -19,7 +19,7 @@ export default async function MainLayout({
   if (!session) {
     redirect('/login');
   }
-  
+
   // Langsung baca role dari user_metadata yang ada di sesi.
   const userRole = session.user.user_metadata?.role;
 
@@ -43,15 +43,21 @@ export default async function MainLayout({
       { name: 'Cari Lowongan', href: dashboardLink },
       { name: 'Lamaran Saya', href: '/siswa/lamaran-saya' },
     ];
+  } else if (userRole === 'company_admin') {
+    profileLink = '/perusahaan/profil';
+    navLinks = [
+      { name: 'Dashboard', href: '/perusahaan/dashboard' },
+      { name: 'Buat Lowongan', href: '/perusahaan/buat-lowongan' },
+    ];
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header 
-        user={session.user} 
+      <Header
+        user={session.user}
         navLinks={navLinks}
         profileLink={profileLink}
-        // dashboardLink bisa ditambahkan jika diperlukan di Header
+      // dashboardLink bisa ditambahkan jika diperlukan di Header
       />
       <main>
         {children}
