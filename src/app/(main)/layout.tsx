@@ -1,7 +1,7 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Header from '@/components/Header';
+import Header from '@/components/MainHeader';
 
 type NavLink = {
   name: string;
@@ -57,7 +57,6 @@ export default async function MainLayout({
         user={session.user}
         navLinks={navLinks}
         profileLink={profileLink}
-      // dashboardLink bisa ditambahkan jika diperlukan di Header
       />
       <main>
         {children}

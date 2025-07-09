@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
-import PerusahaanProfileClient from '@/components/ui/PerusahaanProfileClient'; // Import komponen UI
+import PerusahaanProfileClient from '@/components/ui/PerusahaanProfile'; // Import komponen UI
 
 // Tipe data untuk profil perusahaan
 type CompanyProfile = {
