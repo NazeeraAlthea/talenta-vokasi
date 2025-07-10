@@ -1,5 +1,3 @@
-// app/siswa/dashboard/page.tsx
-
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { redirect } from 'next/navigation';
@@ -7,44 +5,15 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Inbox, Check, Lock, AlertTriangle } from 'lucide-react'; // <-- 1. Import ikon AlertTriangle
 import CategoryFilter from '@/components/ui/CategoryFilter';
+import ListingCard from '@/components/ui/ListingCard';
 
 // Tipe data & Komponen ListingCard tidak berubah...
 type Listing = {
-    id: string;
-    title: string;
-    location: string;
-    companies: { name: string; logo_url: string | null; } | null;
+  id: string;
+  title: string;
+  location: string;
+  companies: { name: string; logo_url: string | null; } | null;
 };
-const ListingCard = ({ listing, isApplied, isVerified }: { listing: Listing, isApplied: boolean, isVerified: boolean }) => {
-    const companyName = listing.companies?.name || 'Perusahaan';
-    const initial = companyName.charAt(0).toUpperCase() || '?';
-    return (
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col">
-            <div className="flex-grow">
-                <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0">
-                        {listing.companies?.logo_url ? <Image width={48} height={48} className="h-12 w-12 rounded-full object-cover" src={listing.companies.logo_url} alt={`${companyName} logo`} /> : <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-lg font-bold text-indigo-600">{initial}</div>}
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 hover:text-indigo-600"><Link href={`/lowongan/${listing.id}`}>{listing.title}</Link></h3>
-                        <p className="text-sm font-medium text-gray-700">{companyName}</p>
-                        <p className="mt-1 text-sm text-gray-500">{listing.location}</p>
-                    </div>
-                </div>
-            </div>
-            <div className="mt-5 flex items-center justify-end">
-                {isApplied ? (
-                    <span className="inline-flex items-center gap-2 rounded-md bg-green-100 px-4 py-2 text-sm font-medium text-green-800"><Check size={16} />Sudah Dilamar</span>
-                ) : isVerified ? (
-                    <Link href={`/lowongan/${listing.id}/lamar`} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Lamar Sekarang</Link>
-                ) : (
-                    <button disabled title="Akun Anda harus diverifikasi oleh sekolah untuk dapat melamar" className="inline-flex items-center gap-2 rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-white cursor-not-allowed"><Lock size={16} />Lamar Sekarang</button>
-                )}
-            </div>
-        </div>
-    );
-};
-
 
 export default async function SiswaDashboardPage({
   searchParams,
@@ -57,10 +26,10 @@ export default async function SiswaDashboardPage({
   if (!session) redirect('/login');
 
   const { data: student } = await supabase.from('students').select('id, verification_status').eq('user_id', session.user.id).single();
-  
+
   const isStudentVerified = student?.verification_status === 'VERIFIED_BY_SCHOOL';
   const isVerificationPending = student?.verification_status === 'PENDING';
-  
+
   const { data: appliedApplications } = await supabase.from('applications').select('listing_id').eq('student_id', student?.id || '');
   const appliedListingIds = new Set(appliedApplications?.map(app => app.listing_id) || []);
 
@@ -79,7 +48,7 @@ export default async function SiswaDashboardPage({
     console.error("Error fetching listings:", error.message);
     return <div className="p-8 text-center text-red-500">Gagal memuat lowongan. Silakan coba lagi.</div>;
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-5xl">
@@ -117,12 +86,30 @@ export default async function SiswaDashboardPage({
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {listings.map(listing => {
                 const isApplied = appliedListingIds.has(listing.id);
+                const cleanListing = {
+                    ...listing,
+                    companies: Array.isArray(listing.companies) ? listing.companies[0] : listing.companies,
+                };
                 return (
-                  <ListingCard 
-                    key={listing.id} 
-                    listing={{...listing, companies: Array.isArray(listing.companies) ? listing.companies[0] : listing.companies}} 
-                    isApplied={isApplied}
-                    isVerified={isStudentVerified}
+                  <ListingCard
+                    key={listing.id}
+                    listing={cleanListing}
+                    // Logika untuk menentukan tombol aksi ada di sini, bukan di dalam Card
+                    actionSlot={
+                      isApplied ? (
+                        <span className="inline-flex items-center gap-2 rounded-md bg-green-100 px-4 py-2 text-sm font-medium text-green-800">
+                          <Check size={16} />Sudah Dilamar
+                        </span>
+                      ) : isStudentVerified ? (
+                        <Link href={`/lowongan/${listing.id}/lamar`} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                          Lamar Sekarang
+                        </Link>
+                      ) : (
+                        <button disabled title="Akun Anda harus diverifikasi oleh sekolah untuk dapat melamar" className="inline-flex items-center gap-2 rounded-md bg-gray-300 px-4 py-2 text-sm font-medium text-white cursor-not-allowed">
+                          <Lock size={16} />Lamar Sekarang
+                        </button>
+                      )
+                    }
                   />
                 );
               })}
